@@ -7,15 +7,16 @@ from tinkoff.invest import Client
 
 TOKEN = os.environ["INVEST_TOKEN"]
 
-RATING = "BB+"
-CURRENT_PROFIT = 12     # percent
-MATURITY_PROFIT = 11    # percent
+RATING = "BB"
+CURRENT_PROFIT = 13     # percent
+MATURITY_PROFIT = 12    # percent
 MATURITY = 12           # month
 AMORTIZATION = True
 FLOATING_COUPON = False
 CSV_SEP = '|'
 CURRENCY = "rub"
 
+BONDS_FILE = "bonds.csv"
 RATINGS_FILE = "ratings.csv"
 COUPONS_FILE = "coupons.csv"
 BLOCKED_FILE = "blocked.csv"
@@ -58,6 +59,7 @@ class BondData:
     isin: str = ""
     rating: str = ""
     monthsToMaturity: int = 0
+    monthsToOffer: int = 0
     nominalPrice: int = 0.0
     currentPrice: int = 0.0
     couponsCountPerYear: int = 0
@@ -66,6 +68,7 @@ class BondData:
     nominalProfitPerYear: float = 0.0
     currentProfitPerYear: float = 0.0
     maturityProfitPerYear: float = 0.0
+    offerProfitPerYear: float = 0.0
 
 @dataclass
 class Rating:    
@@ -77,7 +80,8 @@ class Rating:
 class Coupon:
     name: str = ""
     isin: str = ""
-    coupon: float = 0.0   
+    coupon: float = 0.0
+    months: int = 0     
 
 @dataclass
 class Blocked:
@@ -92,13 +96,13 @@ def monthsCount(dt):
     return round(time_diff.days / 365 * 12)
 
 def moneyValueToReal(mv):
-    return mv.units + (mv.nano / 1000000000.0)
+    return round(mv.units + (mv.nano / 1000000000.0), 2)
 
 def realToStr(v):
     return str(v).replace('.',',')   
 
 def bondsCsvHeader():
-    h = "Название|ISIN|Рейтинг|Срок(м)|Номинал|Цена|Кол куп|Сумма куп|% номинал|% текущ|% к погош"
+    h = "Название|ISIN|Рейтинг|Срок(м)|Оферта(м)|Номинал|Цена|Кол куп|Сумма куп|% номинал|% текущ|% к погош|% к оферте"
     return h
 
 def bondToCsv(b):
@@ -106,13 +110,15 @@ def bondToCsv(b):
         b.isin+CSV_SEP+ \
         b.rating+CSV_SEP+ \
         str(b.monthsToMaturity)+CSV_SEP+ \
+        str(b.monthsToOffer)+CSV_SEP+ \
         str(b.nominalPrice)+CSV_SEP+ \
         str(b.currentPrice)+CSV_SEP+ \
         str(b.couponsCountPerYear)+CSV_SEP+ \
         realToStr(b.couponAmountPerYear)+CSV_SEP+ \
         realToStr(b.nominalProfitPerYear)+CSV_SEP+ \
         realToStr(b.currentProfitPerYear)+CSV_SEP+ \
-        realToStr(b.maturityProfitPerYear)
+        realToStr(b.maturityProfitPerYear)+CSV_SEP+ \
+        realToStr(b.offerProfitPerYear)
     return row    
         
 
@@ -138,6 +144,12 @@ def precalcProfit(b):
         amountByYear = totalAmount / b.monthsToMaturity * 12
         b.maturityProfitPerYear = round(amountByYear / b.currentPrice * 100, 2)
 
+    if b.nominalPrice > 0 and b.currentPrice > 0:
+        couponAmount = b.couponAmountPerYear / 12 * b.monthsToOffer
+        totalAmount = couponAmount - (b.currentPrice - b.nominalPrice)
+        amountByYear = totalAmount / b.monthsToOffer * 12
+        b.offerProfitPerYear = round(amountByYear / b.currentPrice * 100, 2)
+
 def loadCoupons():
     coupons = []
     if not os.path.isfile(COUPONS_FILE):
@@ -150,19 +162,20 @@ def loadCoupons():
             c.name = datas[0]
             c.isin = datas[1]
             c.coupon = float(datas[2])
+            c.months = int(datas[3])
             coupons.append(c)
     return coupons 
 
 def addCouponToFile(c):
-    row = c.name+CSV_SEP+c.isin+CSV_SEP+str(c.coupon)+'\n'
+    row = c.name+CSV_SEP+c.isin+CSV_SEP+str(c.coupon)+CSV_SEP+str(c.months)+'\n'
     with open(COUPONS_FILE, 'a') as f:
         f.write(row)    
 
 def findCoupon(coupons, isin):
     for c in coupons:
         if c.isin == isin:
-            return c.coupon
-    return -1  
+            return c
+    return Coupon()  
     
 def requestCoupon(client, fig):
     #time.sleep(10)
@@ -176,24 +189,36 @@ def requestCoupon(client, fig):
         return 0.0
         
     pay = coupons.events[-1].pay_one_bond
-    return moneyValueToReal(pay)
+
+    c = Coupon()
+    c.coupon = moneyValueToReal(pay)
+    
+    lastDate = datetime.datetime.now()
+    for e in reversed(coupons.events):
+        if (e.pay_one_bond.units == 0):
+            break
+        lastDate = e.coupon_date
+
+    c.months = monthsCount(lastDate) 
+    if (c.months < 1):
+        c.months = 1
+
+    return c       
 
 def getCoupon(coupons, client, tb):
 
-    cv = findCoupon(coupons, tb.isin)  
-    if cv > 0: 
-        return cv
+    c = findCoupon(coupons, tb.isin)  
+    if c.coupon > 0: 
+        return c
 
-    cv = requestCoupon(client, tb.figi)  
-    if cv > 0:
-        c = Coupon()
+    c = requestCoupon(client, tb.figi)  
+    if c.coupon > 0:
         c.name = tb.name
         c.isin = tb.isin
-        c.coupon = cv
         coupons.append(c)
         addCouponToFile(c)
 
-    return cv    
+    return c    
 
 def findCurrentPrice(prices, figi, nominal):
     for p in prices:
@@ -302,7 +327,9 @@ def main():
 
                 myb = tbondToBondData(tb)
                 myb.rating = rating
-                myb.coupon = getCoupon(coupons, client, tb)
+                c = getCoupon(coupons, client, tb)
+                myb.coupon = c.coupon
+                myb.monthsToOffer = c.months
                 myb.currentPrice = findCurrentPrice(prices, tb.figi, myb.nominalPrice)
 
                 precalcProfit(myb)
@@ -316,7 +343,7 @@ def main():
                 bondsCsv += bondCsv
                 bondsCsv += '\n'
 
-        with open("bonds.csv", 'w') as bondsFile:
+        with open(BONDS_FILE, 'w') as bondsFile:
             bondsFile.write(bondsCsv)
 
 
