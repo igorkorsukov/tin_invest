@@ -8,7 +8,7 @@ from tinkoff.invest import Client
 TOKEN = os.environ["INVEST_TOKEN"]
 
 RATING = "BB"
-CURRENT_PROFIT = 13     # percent
+CURRENT_PROFIT = 12     # percent
 MATURITY_PROFIT = 12    # percent
 MATURITY = 12           # month
 AMORTIZATION = True
@@ -186,7 +186,7 @@ def requestCoupon(client, fig):
         to = today + datetime.timedelta(days=365))
 
     if len(coupons.events) == 0:
-        return 0.0
+        return Coupon()
         
     pay = coupons.events[-1].pay_one_bond
 
