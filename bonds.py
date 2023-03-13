@@ -2,6 +2,7 @@ import os
 import datetime
 import time
 from dataclasses import dataclass
+import argparse
 
 from tinkoff.invest import Client
 
@@ -144,7 +145,7 @@ def precalcProfit(b):
         amountByYear = totalAmount / b.monthsToMaturity * 12
         b.maturityProfitPerYear = round(amountByYear / b.currentPrice * 100, 2)
 
-    if b.nominalPrice > 0 and b.currentPrice > 0:
+    if b.nominalPrice > 0 and b.currentPrice > 0 and b.monthsToOffer > 0:
         couponAmount = b.couponAmountPerYear / 12 * b.monthsToOffer
         totalAmount = couponAmount - (b.currentPrice - b.nominalPrice)
         amountByYear = totalAmount / b.monthsToOffer * 12
@@ -305,9 +306,19 @@ def isProfitAllow(b):
     if b.currentProfitPerYear >= CURRENT_PROFIT and b.maturityProfitPerYear >= MATURITY_PROFIT:
         return True   
 
-    return False                           
+    return False 
+
+def isNew(b):
+    if b.rating == "":
+        return True 
+    return False                                  
 
 def main():
+
+    parser = argparse.ArgumentParser(description='Tinkoff bonds')
+    parser.add_argument('--only_new', action='store_true', help='Only new bonds')
+    args = parser.parse_args()
+
     with Client(TOKEN) as client:
 
         bondsCsv = bondsCsvHeader()
@@ -335,6 +346,9 @@ def main():
                 precalcProfit(myb)
 
                 if not isProfitAllow(myb):
+                    continue
+
+                if args.only_new and not isNew(myb):
                     continue
 
                 bondCsv = bondToCsv(myb) 
