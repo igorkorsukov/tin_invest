@@ -2,7 +2,7 @@ import os
 import datetime
 from dataclasses import dataclass
 
-from . import utils
+import modules.utils as utils
 
 COUPONS_FILE = "coupons.csv"
 CSV_SEP = '|'
@@ -46,22 +46,22 @@ def requestCoupon(client, fig):
     coupons = client.instruments.get_bond_coupons(
         figi = fig,
         from_= today,
-        to = today + datetime.timedelta(days=365))
+        to = today + datetime.timedelta(days=365*10))
 
     if len(coupons.events) == 0:
         return Coupon()
 
     pay = 0.0
     if len(coupons.events) == 1:    
-        pay = coupons.events[-1].pay_one_bond
+        pay = coupons.events[0].pay_one_bond
     else:
-        pay = coupons.events[-2].pay_one_bond 
+        pay = coupons.events[1].pay_one_bond 
 
     c = Coupon()
     c.value = utils.moneyValueToReal(pay)
     
-    lastDate = datetime.datetime.now()
-    for e in reversed(coupons.events):
+    lastDate = today
+    for e in coupons.events:
         if (e.pay_one_bond.units == 0):
             break
         lastDate = e.coupon_date
@@ -85,9 +85,12 @@ def getCoupon(coupons, client, tb):
         coupons.append(c)
         addCouponToFile(c)
 
-    return c     
+    return c 
 
 def addCouponToFile(c):
     row = c.name+CSV_SEP+c.isin+CSV_SEP+str(c.value)+CSV_SEP+str(c.months)+'\n'
     with open(COUPONS_FILE, 'a') as f:
         f.write(row)        
+
+def clearFile():
+    open(COUPONS_FILE, 'w').close()    
