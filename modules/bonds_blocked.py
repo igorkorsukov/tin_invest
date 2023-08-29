@@ -11,7 +11,11 @@ class Blocked:
     comment: str = ""  
 
 def init(config):
+    global BLOCKED_FILE
+    global CSV_SEP
+
     BLOCKED_FILE = config.BLOCKED_FILE
+    CSV_SEP = config.CSV_SEP
 
 def loadBlocked():
     blocked = []

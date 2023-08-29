@@ -31,6 +31,12 @@ class StatData:
 def MakeStats(config):
 
     # Init
+    global NOMINAL_PROFIT
+    global CURRENT_PROFIT
+    global MATURITY_PROFIT
+    global CSV_SEP
+    global STATS_FILE
+
     NOMINAL_PROFIT = config.NOMINAL_PROFIT
     CURRENT_PROFIT = config.CURRENT_PROFIT
     MATURITY_PROFIT = config.MATURITY_PROFIT
@@ -38,6 +44,7 @@ def MakeStats(config):
     STATS_FILE = config.STATS_FILE
 
     bonds_ratings.init(config)
+    bonds_coupons.init(config)
     bonds_blocked.init(config)
     bonds_allowed.init(config)
 

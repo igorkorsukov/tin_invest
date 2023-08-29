@@ -53,7 +53,11 @@ class Rating:
     rating: str = ""
 
 def init(config):
+    global RATINGS_FILE
+    global CSV_SEP
+
     RATINGS_FILE = config.RATINGS_FILE    
+    CSV_SEP = config.CSV_SEP
 
 def loadRatings():
     ratings = []

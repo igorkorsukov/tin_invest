@@ -7,6 +7,11 @@ FLOATING_COUPON = False
 CURRENCY = "rub"
 
 def init(config):
+    global FLOATING_COUPON
+    global AMORTIZATION
+    global MATURITY
+    global CURRENCY
+
     FLOATING_COUPON = config.FLOATING_COUPON
     AMORTIZATION = config.AMORTIZATION
     MATURITY = config.MATURITY

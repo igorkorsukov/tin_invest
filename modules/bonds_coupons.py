@@ -15,6 +15,9 @@ class Coupon:
     months: int = 0   
 
 def init(config):
+    global COUPONS_FILE
+    global CSV_SEP
+
     COUPONS_FILE = config.COUPONS_FILE
     CSV_SEP = config.CSV_SEP
 

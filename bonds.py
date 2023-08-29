@@ -1,7 +1,7 @@
 import argparse
 
 import config as config
-import modules.make_bonds_list as make_bonds_list
+import modules.make_bonds_list2 as make_bonds_list
 import modules.make_bonds_stat as make_bonds_stat
 import modules.make_bonds_coupons as make_bonds_coupons
 
@@ -13,7 +13,7 @@ def main():
     args = parser.parse_args()
 
     if args.list:
-        make_bonds_list.MakeList()
+        make_bonds_list.MakeList(config)
     elif args.stat:
         make_bonds_stat.MakeStats(config)
     elif args.coupons:

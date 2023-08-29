@@ -10,7 +10,7 @@ from . import bonds_stat
 
 TOKEN = os.environ["INVEST_TOKEN"]
 
-RATING = "BB"
+RATING = "BBB"
 CURRENT_PROFIT = 11     # percent
 MATURITY_PROFIT = 11    # percent
 MATURITY = 10           # month
