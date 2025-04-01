@@ -1,39 +1,39 @@
 import os
 from dataclasses import dataclass
 
-BLOCKED_FILE = "bonds_blocked.csv"
+FAVS_FILE = "bonds_favs.csv"
 CSV_SEP = '|'
 
 @dataclass
-class Blocked:
+class Fav:
     name: str = ""
     isin: str = ""
     comment: str = ""  
 
 def init(config):
-    global BLOCKED_FILE
+    global FAVS_FILE
     global CSV_SEP
 
-    BLOCKED_FILE = config.BLOCKED_FILE
+    FAVS_FILE = config.FAVS_FILE
     CSV_SEP = config.CSV_SEP
 
-def loadBlocked():
-    blocked = []
-    if not os.path.isfile(BLOCKED_FILE):
-        return blocked
+def loadFavs():
+    favs = []
+    if not os.path.isfile(FAVS_FILE):
+        return favs
 
-    with open(BLOCKED_FILE) as file:
+    with open(FAVS_FILE) as file:
         for line in file:
             datas = line.rstrip().split(CSV_SEP)
-            b = Blocked()
+            b = Fav()
             b.name = datas[0]
             b.isin = datas[1]
             b.comment = datas[2]
-            blocked.append(b)
-    return blocked 
+            favs.append(b)
+    return favs 
 
-def isBlocked(blocked, isin):
-    for b in blocked:
+def isAllowed(favs, isin):
+    for b in favs:
         if b.isin == isin:
             return True
     return False  

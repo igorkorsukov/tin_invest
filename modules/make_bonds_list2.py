@@ -7,11 +7,12 @@ import modules.bonds_coupons as bonds_coupons
 import modules.bonds_prices as bonds_prices
 import modules.bonds_profit as bonds_profit
 import modules.bonds_blocked as bonds_blocked
+import modules.bonds_favs as bonds_favs
 import modules.bonds_allowed as bonds_allowed
 import modules.bonds_stat as bonds_stat
 import modules.utils as utils
 
-import config as config
+import bonds_config as config
 
 RATING = "BBB"
 MATURITY = 12
@@ -54,10 +55,26 @@ def precalcProfit(b, tb):
     b.maturityProfitPerYear = bonds_profit.maturityProfit(tb, b.coupon, b.currentPrice)
 
 def bondsCsvHeader():
-    h = "Название|ISIN|Рейтинг|Срок(м)|Оферта(м)|Номинал|Цена|Кол куп|% номл|d номл|% текщ|d текщ|% погш|d погш|% офер|d офер"
+    h = "Название|ISIN|Рейтинг|Срок(м)|Оферта(м)|Номинал|Цена|Кол куп|% номл|% текщ|% погш"
     return h
 
 def bondToCsv(b):
+    # row = b.name+CSV_SEP+ \
+    #     b.isin+CSV_SEP+ \
+    #     b.rating+CSV_SEP+ \
+    #     str(b.monthsToMaturity)+CSV_SEP+ \
+    #     str(b.monthsToOffer)+CSV_SEP+ \
+    #     str(b.nominalPrice)+CSV_SEP+ \
+    #     str(b.currentPrice)+CSV_SEP+ \
+    #     str(b.couponsCountPerYear)+CSV_SEP+ \
+    #     utils.realToStr(b.nominalProfitPerYear)+CSV_SEP+ \
+    #     utils.realToStr(b.nominalProfitDelta)+CSV_SEP+ \
+    #     utils.realToStr(b.currentProfitPerYear)+CSV_SEP+ \
+    #     utils.realToStr(b.currentProfitDelta)+CSV_SEP+ \
+    #     utils.realToStr(b.maturityProfitPerYear)+CSV_SEP+ \
+    #     utils.realToStr(b.maturityProfitDelta)+CSV_SEP+ \
+    #     utils.realToStr(b.offerProfitPerYear)+CSV_SEP+ \
+    #     utils.realToStr(0.0)
     row = b.name+CSV_SEP+ \
         b.isin+CSV_SEP+ \
         b.rating+CSV_SEP+ \
@@ -67,17 +84,12 @@ def bondToCsv(b):
         str(b.currentPrice)+CSV_SEP+ \
         str(b.couponsCountPerYear)+CSV_SEP+ \
         utils.realToStr(b.nominalProfitPerYear)+CSV_SEP+ \
-        utils.realToStr(b.nominalProfitDelta)+CSV_SEP+ \
         utils.realToStr(b.currentProfitPerYear)+CSV_SEP+ \
-        utils.realToStr(b.currentProfitDelta)+CSV_SEP+ \
-        utils.realToStr(b.maturityProfitPerYear)+CSV_SEP+ \
-        utils.realToStr(b.maturityProfitDelta)+CSV_SEP+ \
-        utils.realToStr(b.offerProfitPerYear)+CSV_SEP+ \
-        utils.realToStr(0.0)
+        utils.realToStr(b.maturityProfitPerYear)+CSV_SEP
 
     return row 
 
-def MakeList(config):
+def doMakeList(config, onlyFavs):
 
     with Client(config.TOKEN) as client:
 
@@ -95,6 +107,7 @@ def MakeList(config):
         bonds_coupons.init(config)
         bonds_profit.init(config)
         bonds_blocked.init(config)
+        bonds_favs.init(config)
         bonds_allowed.init(config)
         bonds_stat.init(config)
 
@@ -109,10 +122,18 @@ def MakeList(config):
         blocked = bonds_blocked.loadBlocked()
         stats = bonds_stat.loadStats()
 
+        favs = []
+        if onlyFavs:
+            favs = bonds_favs.loadFavs()
+
         allbonds = client.instruments.bonds()
         for tb in allbonds.instruments:
 
               if bonds_allowed.isBondAllowed(tb, blocked):
+
+                if onlyFavs and not bonds_favs.isAllowed(favs, tb.isin):
+                    continue
+
                 rating = bonds_ratings.findRating(ratings, tb.isin)
                 if bonds_ratings.isRatingLess(rating, RATING):
                     continue   
@@ -149,6 +170,12 @@ def MakeList(config):
 
         with open(BONDS_FILE, 'w') as bondsFile:
             bondsFile.write(bondsCsv)
+
+def MakeList(config):
+    doMakeList(config, False)
+
+def MakeFavsList(config):
+    doMakeList(config, True)
 
 if __name__ == "__main__":
     MakeList(config)                
