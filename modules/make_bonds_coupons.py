@@ -7,7 +7,7 @@ import modules.bonds_coupons as bonds_coupons
 import modules.bonds_allowed as bonds_allowed
 import modules.bonds_blocked as bonds_blocked
 
-import config as config
+import bonds_config as config
 
 TOKEN = os.environ["INVEST_TOKEN"]
 

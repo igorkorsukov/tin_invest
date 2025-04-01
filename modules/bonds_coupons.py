@@ -67,6 +67,10 @@ def requestCoupon(client, fig):
     for e in coupons.events:
         if (e.pay_one_bond.units == 0):
             break
+   
+        if (e.pay_one_bond.units != pay.units):
+            break
+
         lastDate = e.coupon_date
 
     c.months = utils.monthsCount(lastDate) 
