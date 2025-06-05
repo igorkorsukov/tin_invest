@@ -55,7 +55,7 @@ def precalcProfit(b, tb):
     b.maturityProfitPerYear = bonds_profit.maturityProfit(tb, b.coupon, b.currentPrice)
 
 def bondsCsvHeader():
-    h = "Название|ISIN|Рейтинг|Срок(м)|Оферта(м)|Номинал|Цена|Кол куп|% номл|% текщ|% погш"
+    h = "Название|ISIN|Рейтинг|Срок(м)|Оферта(м)|% текщ|% погш|Номинал|Цена|Кол куп"
     return h
 
 def bondToCsv(b):
@@ -80,12 +80,11 @@ def bondToCsv(b):
         b.rating+CSV_SEP+ \
         str(b.monthsToMaturity)+CSV_SEP+ \
         str(b.monthsToOffer)+CSV_SEP+ \
+        utils.realToStr(b.currentProfitPerYear)+CSV_SEP+ \
+        utils.realToStr(b.maturityProfitPerYear)+CSV_SEP+ \
         str(b.nominalPrice)+CSV_SEP+ \
         str(b.currentPrice)+CSV_SEP+ \
-        str(b.couponsCountPerYear)+CSV_SEP+ \
-        utils.realToStr(b.nominalProfitPerYear)+CSV_SEP+ \
-        utils.realToStr(b.currentProfitPerYear)+CSV_SEP+ \
-        utils.realToStr(b.maturityProfitPerYear)+CSV_SEP
+        str(b.couponsCountPerYear)+CSV_SEP
 
     return row 
 
